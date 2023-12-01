@@ -299,7 +299,7 @@
           message: {
             schema: 'blogpost',
             dataFormat: 'application/json',
-            protocol: 'test3',
+            protocol: 'http://test3',
             protocolPath: 'blogpost',
             published: true,
           },
@@ -334,6 +334,7 @@
             },
           },
         });
+        console.log('blog post records', blogpostrecords)
 
         //get images
         const { records: imagerecords } = await web5.dwn.records.query({
@@ -345,13 +346,15 @@
             },
           },
         });
-        console.log(await imagerecords);
+        console.log('image records', imagerecords);
 
         const blogPostIds = [];
 
         Promise.all(
           blogpostrecords.map((element) => {
+            console.log('this is the element', element);
             blogPostIds.push(element.id);
+
             return element.data.json();
           })
         ).then((resolvedBlogContents) => {
@@ -361,9 +364,25 @@
 
             blogDiv.classList.add('blog-div');
             //retrieve any image uploaded for this blogpost
+            
             imagerecords.forEach(async (element) => {
+              console.log('this is the element for images', element);
               // Get the blob of the image data
-              const imageresult = await element.data.blob();
+              const imageId = element.id
+              console.log(imageId)
+               const {record, status }= await web5.dwn.records.read({
+                from: blogDid,
+                message: {
+                   filter: {
+                    recordId: imageId,
+                   },
+                  // protocol: 'http://test3',
+                  // protocolPath: 'blogpost/image',
+                },
+                });
+              console.log ({record, status})
+              const imageresult = await record.data.blob();
+     
               const imageid = await element.contextId;
               if (imageid === blogPostIds[index]) {
                 // Create a new img element for the image
