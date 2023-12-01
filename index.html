@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Testing a blog protocol</title>
+      <style>
+      /* Paragraph styling */
+#display {
+  margin: 0 auto;
+  padding: 1rem;
+  width: 80%;
+  font-family: sans-serif;
+  font-size: 16px;
+  line-height: 1.5rem;
+}
+
+/* Blog headline styling */
+.blog-headline {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+/* Blog description styling */
+.blog-description {
+  font-size: 1rem;
+  font-weight: normal;
+  font-style: italic;  
+}
+
+/* Article body styling */
+.blog-articlebody {
+  font-size: 1rem;
+  font-weight: normal;
+  font-style: normal;
+    
+}
+ 
+ .blog-div {
+  border: 1px solid black;
+  margin-bottom: 10px;
+  font-size: 20px;      
+}
+  img {
+  max-width: 500px;
+  margin: 0 auto; 
+  display: block; 
+}             
+         
+      </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Testing a blog protocol</h1>
+      <hr />
+      <main class="sections">
+        <section id="section1" class="section">
+          <h2>Set up your Blog</h2>
+          <p>
+            Configure (install) the protocol so that you can start writing
+            posts. It doesn't matter if you install it again by accident.
+          </p>
+          <div>
+            Configure protocol (install it)<br />
+            <button id="configProtocol">Protocol config</button>
+            <p id="configProtocolInfo"></p>
+          </div>
+          <div>
+            Check to see if test protocol is configured<br />
+            <button id="queryProtocol">Protocol query</button>
+            <p id="queryProtocolInfo"></p>
+          </div>
+          <div>
+            See your DID (it is an unanchored ION DID so it will be very
+            long)<br />
+            <button id="seeDid">See Did</button><br />
+            <p id="seeDidInfo"></p>
+          </div>
+        </section>
+        <hr />
+        <section id="section2" class="section">
+          <h2>Add a post to your blog</h2>
+          <p>Wait a few minutes if you've only just installed the protocol. Remove any sensitive exif data before you upload an image</p>
+          <label for="headline">The title of your blog post</label><br />
+          <input type="text" id="headline" required /><br /><br />
+          <label for="description">(Optional) a short description</label><br />
+          <input type="text" id="description" /><br /><br />
+          <label for="articlebody">Your blog post</label><br />
+          <textarea rows="10" cols="40" id="articlebody" required></textarea
+          ><br /><br />
+          <label for="image">(Optional) add an image to your post </label><br />
+          <input
+            type="file"
+            id="image"
+            name="image"
+            accept="image/png, image/jpeg"
+          /><br /><br />
+          <label for="publishBlogpost">Publish your blog post</label><br />
+          <button id="publishBlogpost">Publish</button><br />
+          <p id="publishBlogpostInfo"></p>
+        </section>
+        <hr />
+        <section id="section3" class="section">
+          <h2>Read a blog (yours or someone else's)</h2>
+          <p>If you enter someone else's DID then it will currently only display text. Only your own blog will show images.</p>
+          <label for="enterDid"
+            >Enter DID here (leave blank to read your own)</label
+          ><br />
+          <input type="text" id="enterDid" /><br /><br />
+          <button id="readBlog">Read Blog</button><br />
+          <div id="blogresult"></div>
+          <img />
+        </section>
+          
+      </main>
+    </div>
+    <script type="module">
+      const div = document.querySelector('div');
+
+      // Create a map of button IDs to handler functions
+      const buttonHandlers = new Map([
+        ['queryProtocol', queryProtocol],
+        ['configProtocol', configProtocol],
+        ['publishBlogpost', publishBlogpost],
+        ['readBlog', readBlog],
+        ['seeDid', seeDid],
+      ]);
+
+      // Add an event listener to the div element
+      div.addEventListener('click', (event) => {
+        // Get the handler function for the clicked button
+        const handler = buttonHandlers.get(event.target.id);
+
+        // If a handler function was found, call it
+        if (handler) {
+          handler();
+        }
+      });
+        
+      //Add another event listener for change event
+      image.addEventListener('change', async function () {
+          const filereader = new FileReader();
+          filereader.readAsArrayBuffer(image.files[0]);
+          filereader.addEventListener('load', function () {
+              imageData = filereader.result;
+          })
+      });
+      
+
+      // Import Web5
+      import { Web5 } from 'https://cdn.jsdelivr.net/npm/@web5/api@0.8.2/dist/browser.mjs';;
+      // Initiate web5 connect
+      const { web5, did: myDid } = await Web5.connect();
+      // variable for uploaded images
+      let imageData;
+      // The protocol to be installed
+      const protocolDefinition = {
+        protocol: 'http://test3',
+        published: true,
+        types: {
+          comments: {
+            dataFormats: ['application/json'],
+          },
+          blogpost: {
+            dataFormats: ['application/json'],
+          },
+          image: {
+            dataFormats: ['image/png', 'image/jpeg'],
+          },
+          video: {
+            dataFormats: ['video/mp4', 'video/webm'],
+          },
+        },
+        structure: {
+          blogpost: {
+            $actions: [
+              {
+                who: 'anyone',
+                can: 'write',
+              },
+              {
+                who: 'anyone',
+                can: 'read',
+              },
+            ],
+            comments: {
+              $actions: [
+                {
+                  who: 'anyone',
+                  can: 'write',
+                },
+                {
+                  who: 'anyone',
+                  can: 'read',
+                },
+              ],
+            },
+            image: {
+              $actions: [
+                {
+                  who: 'author',
+                  of: 'blogpost',
+                  can: 'write',
+                },
+                {
+                  who: 'anyone',
+                  can: 'read',
+                },
+              ],
+            },
+            video: {
+              $actions: [
+                {
+                  who: 'author',
+                  of: 'blogpost',
+                  can: 'write',
+                },
+                {
+                  who: 'anyone',
+                  can: 'read',
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      //install protocol
+      async function configProtocol() {
+        const { protocol, status } = await web5.dwn.protocols.configure({  
+          message: {
+            definition: protocolDefinition,
+          },
+        });
+        protocol.send(myDid);
+        console.log(status);
+        document.getElementById('configProtocolInfo').innerHTML =
+          JSON.stringify(status);
+      }
+
+      //doublecheck it is installed
+      async function queryProtocol() {
+        const { protocols } = await web5.dwn.protocols.query({
+          message: {
+            filter: {
+              protocol: 'test3',
+            },
+          },
+        });
+        console.log(protocols);
+        document.getElementById('queryProtocolInfo').innerHTML =
+          'Installed protocol: ' +
+          JSON.stringify(protocols[0].definition.protocol);
+      }
+
+      //Check what your DID is
+      async function seeDid() {
+        document.getElementById('seeDidInfo').innerHTML = myDid;
+      }
+
+
+      //function to write an image file if needed
+      async function imageWrite(imageDataFile, contextId) {
+        const imageblob = new Blob([imageDataFile], { type: 'image/jpeg' });
+
+        const { record: imagerecord } = await web5.dwn.records.create({
+          data: imageblob,
+          store: false,
+          message: {
+            schema: 'blogpost',
+            dataFormat: 'image/jpeg',
+            protocol: 'test3',
+            protocolPath: 'blogpost/image',
+            parentId: contextId,
+            contextId: contextId,
+            published: true,
+          },
+        });
+        const { status: imagestatus } = await imagerecord.send(myDid);
+        console.log(imagestatus);
+        document.getElementById('publishBlogpostInfo').innerHTML +=
+          'Image upload:   ' + imagestatus.detail;
+      }
+
+      //publish blog
+      async function publishBlogpost() {
+        //get values for blogpost
+        let headline = document.getElementById('headline').value;
+        let blogDescription = document.getElementById('description').value;
+        let articlebody = document.getElementById('articlebody').value;
+        let jsonData = {
+          headline: headline,
+          description: blogDescription,
+          articlebody: articlebody,
+        };
+
+        //write the initial blogpost record with the application/json data
+        const { record: initialrecord } = await web5.dwn.records.create({
+          data: jsonData,
+          store: false,
+          message: {
+            schema: 'blogpost',
+            dataFormat: 'application/json',
+            protocol: 'test3',
+            protocolPath: 'blogpost',
+            published: true,
+          },
+        });
+        const { status: initialstatus } = await initialrecord.send(myDid);
+        console.log(initialstatus);
+        document.getElementById('publishBlogpostInfo').innerHTML =
+          'Status:   ' + initialstatus.detail;
+        const conId = initialrecord.id;
+
+        if (imageData) {
+          await imageWrite(imageData, conId);
+        }
+        //reset input fields
+        document.getElementById('headline').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('articlebody').value = '';
+      }
+
+      //Display a blog once a DID has been entered
+      async function readBlog() {
+        document.getElementById('blogresult').innerHTML = '';
+        const blogDid = document.getElementById('enterDid').value;
+
+        //get blogposts
+        const { records: blogpostrecords } = await web5.dwn.records.query({
+          from: blogDid,
+          message: {
+            filter: {
+              protocol: 'http://test3',
+              protocolPath: 'blogpost',
+            },
+          },
+        });
+
+        //get images
+        const { records: imagerecords } = await web5.dwn.records.query({
+          from: blogDid,
+          message: {
+            filter: {
+              protocol: 'http://test3',
+              protocolPath: 'blogpost/image',
+            },
+          },
+        });
+        console.log(await imagerecords);
+
+        const blogPostIds = [];
+
+        Promise.all(
+          blogpostrecords.map((element) => {
+            blogPostIds.push(element.id);
+            return element.data.json();
+          })
+        ).then((resolvedBlogContents) => {
+          resolvedBlogContents.forEach((blogContent, index) => {
+            // Create a new div element for each blog post.
+            const blogDiv = document.createElement('div');
+
+            blogDiv.classList.add('blog-div');
+            //retrieve any image uploaded for this blogpost
+            imagerecords.forEach(async (element) => {
+              // Get the blob of the image data
+              const imageresult = await element.data.blob();
+              const imageid = await element.contextId;
+              if (imageid === blogPostIds[index]) {
+                // Create a new img element for the image
+                const img = document.createElement('img');
+
+                // Create a URL for the image
+                const imageUrl = URL.createObjectURL(imageresult);
+
+                // Set the src attribute of the img element to the URL
+                img.src = imageUrl;
+
+                // Append the img element to the container element
+                blogDiv.appendChild(img);
+              }
+            });
+
+            // Set the innerHTML of the div element to the blog post content.
+            blogDiv.innerHTML = `
+        <p id="display">
+           <span class="blog-headline"> 
+          ${blogContent.headline}
+          <br />
+            <span class="blog-description">
+          ${blogContent.description}
+          <br />
+            <span class="blog-articlebody">
+          ${blogContent.articlebody}
+        </p>
+      `;
+
+            // Append the div element to the blogresult element.
+            document.getElementById('blogresult').appendChild(blogDiv);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
